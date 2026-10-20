@@ -14,6 +14,7 @@ import { ExplorePage } from './features/explore/ExplorePage';
 import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { ProfilePage } from './features/profiles/ProfilePage';
 import { MusicPage } from './features/music/MusicPage';
+import { LandingPage } from './features/landing/LandingPage';
 
 const StartupAnimation = ({ onComplete }: { onComplete: () => void }) => {
   return (
@@ -84,7 +85,7 @@ const StartupAnimation = ({ onComplete }: { onComplete: () => void }) => {
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMode, setAuthMode] = useState<'landing' | 'signin' | 'signup'>('landing');
   const [showAnimation, setShowAnimation] = useState(true);
 
   useEffect(() => {
@@ -97,7 +98,9 @@ const AppContent = () => {
   }
 
   if (!isAuthenticated) {
-    return authMode === 'signin' ? (
+    return authMode === 'landing' ? (
+      <LandingPage onEnter={() => setAuthMode('signin')} />
+    ) : authMode === 'signin' ? (
       <SignIn onSwitch={() => setAuthMode('signup')} />
     ) : (
       <SignUp onSwitch={() => setAuthMode('signin')} />
