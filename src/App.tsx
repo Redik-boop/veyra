@@ -12,7 +12,7 @@ import { Groups } from './features/groups/Groups';
 import { ExplorePage } from './features/explore/ExplorePage';
 import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { ProfilePage } from './features/profiles/ProfilePage';
-import { MusicPage } from './features/music/MusicPage';
+import { MusicPage } from './features/music/MusicPage.tsx';
 import { SignIn, SignUp } from './features/auth/AuthPages';
 
 // Simple placeholders for other pages
