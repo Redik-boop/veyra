@@ -15,6 +15,7 @@ import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { ProfilePage } from './features/profiles/ProfilePage';
 import { MusicPage } from './features/music/MusicPage';
 import { LandingPage } from './features/landing/LandingPage';
+import { PromoMode } from './features/promo/PromoMode';
 
 const StartupAnimation = ({ onComplete }: { onComplete: () => void }) => {
   return (
@@ -87,6 +88,7 @@ const AppContent = () => {
   const { isAuthenticated } = useAuth();
   const [authMode, setAuthMode] = useState<'landing' | 'signin' | 'signup'>('landing');
   const [showAnimation, setShowAnimation] = useState(true);
+  const [showPromo, setShowPromo] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowAnimation(false), 3000);
@@ -97,11 +99,15 @@ const AppContent = () => {
     return <StartupAnimation onComplete={() => setShowAnimation(false)} />;
   }
 
+  if (showPromo) {
+    return <PromoMode onExit={() => setShowPromo(false)} />;
+  }
+
   if (!isAuthenticated) {
     return authMode === 'landing' ? (
-      <LandingPage onEnter={() => setAuthMode('signin')} />
+      <LandingPage onEnter={() => setShowPromo(true)} />
     ) : authMode === 'signin' ? (
-      <SignIn onSwitch={() => setAuthMode('signup')} />
+      <SignIn on,Switch={() => setAuthMode('signup')} />
     ) : (
       <SignUp onSwitch={() => setAuthMode('signin')} />
     );
