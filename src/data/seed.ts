@@ -1,4 +1,4 @@
-import { initDB } from './db';
+import { initDB } from '../storage/db';
 
 export const seedDatabase = async () => {
   const db = await initDB();

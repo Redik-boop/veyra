@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useDB, getItems } from '../hooks/useDB';
+import { useDB, getItems } from '../../hooks/useDB';
 import { Heart, MessageCircle, Share2, Music2, User } from 'lucide-react';
 import { cn } from '../../utils/cn';
 

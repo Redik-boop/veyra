@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useDB, putItem, getItems } from '../hooks/useDB';
-import { useAuth } from '../hooks/useAuth';
+import { useDB, putItem, getItems } from '../../hooks/useDB';
+import { useAuth } from '../../hooks/useAuth';
 import { Mail, Lock, User, ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
 

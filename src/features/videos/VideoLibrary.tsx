@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDB, getItems } from '../hooks/useDB';
+import { useDB, getItems } from '../../hooks/useDB';
 import { Play, Info, Clock, User as UserIcon, Search } from 'lucide-react';
 import { cn } from '../../utils/cn';
 

@@ -1,41 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { useDB, getItems, putItem } from '../hooks/useDB';
-import { Users, Plus, Search, MessageSquare, UserPlus } from 'lucide-react';
+import { Users, Plus, Search } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
+const API_URL = 'https://veyra-server.onrender.com/api';
+
 const GroupDetail = ({ group, onBack }: { group: any, onBack: () => void }) => {
-  const db = useDB();
   const [posts, setPosts] = useState<any[]>([]);
   const [content, setContent] = useState('');
 
   useEffect(() => {
     const load = async () => {
-      if (!db) return;
-      const allPosts = await getItems(db, 'posts');
-      setPosts(allPosts.filter(p => p.groupId === group.id).sort((a, b) => b.createdAt - a.createdAt));
+      try {
+        const res = await fetch(`${API_URL}/groups/${group.id}/posts`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('veyra_token')}` }
+        });
+        const data = await res.json();
+        setPosts(data);
+      } catch (err) {
+        console.error(err);
+      }
     };
     load();
-  }, [db, group]);
+  }, [group]);
 
   const createGroupPost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !db) return;
+    if (!content.trim()) return;
 
-    const newPost = {
-      id: `gp${Date.now()}`,
-      userId: 'u1',
-      groupId: group.id,
-      content,
-      likes: [],
-      comments: [],
-      createdAt: Date.now(),
-    };
-
-    await putItem(db, 'posts', newPost);
-    setContent('');
-    // Reload
-    const all = await getItems(db, 'posts');
-    setPosts(all.filter(p => p.groupId === group.id).sort((a, b) => b.createdAt - a.createdAt));
+    try {
+      const res = await fetch(`${API_URL}/groups/post`, {
+        method: 'POST',
+        headers {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('veyra_token')}`
+        },
+        body: JSON.stringify({ groupId: group.id, content }),
+      });
+      if (res.ok) {
+        setContent('');
+        // Refresh posts
+        const dataRes = await fetch(`${API_URL}/groups/${group.id}/posts`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('veyra_token')}` }
+        });
+        setPosts(await dataRes.json());
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -71,10 +83,10 @@ const GroupDetail = ({ group, onBack }: { group: any, onBack: () => void }) => {
         {posts.length === 0 ? (
           <div className="text-center py-12 text-veyra-textMuted text-sm">No community posts yet.</div>
         ) : (
-          posts.map(p => (
+          posts.map((p: any) => (
             <div key={p.id} className="glass-panel p-4 rounded-2xl">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-veyra-accentBlue">User_{p.userId.slice(-3)}</span>
+                <span className="text-xs font-bold text-veyra-accentBlue">User_{p.userId?.slice(-3)}</span>
                 <span className="text-[10px] text-veyra-textMuted">{new Date(p.createdAt).toLocaleDateString()}</span>
               </div>
               <p className="text-sm">{p.content}</p>
@@ -88,10 +100,16 @@ const GroupDetail = ({ group, onBack }: { group: any, onBack: () => void }) => {
 
 export const Groups = () => {
   const [activeGroup, setActiveGroup] = useState<any>(null);
-  const demoGroups = [
-    { id: 'g1', name: 'Frontend Wizards', membersCount: 124, description: 'Sharing CSS and React tips.' },
-    { id: 'g2', name: 'Offline Explorers', membersCount: 89, description: 'The original Veyra community.' },
-  ];
+  const [groups, setGroups] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/groups`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('veyra_token')}` }
+    })
+    .then(res => res.json())
+    .then(setGroups)
+    .catch(console.error);
+  }, []);
 
   return (
     <div className="h-full flex overflow-hidden bg-veyra-black">
@@ -113,7 +131,7 @@ export const Groups = () => {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {demoGroups.map(group => (
+          {groups.map(group => (
             <div
               key={group.id}
               onClick={() => setActiveGroup(group)}

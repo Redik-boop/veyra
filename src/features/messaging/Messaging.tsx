@@ -1,40 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { useDB, getItems, putItem } from '../hooks/useDB';
-import { Send, Search, MoreVertical, Phone, Video, UserPlus } from 'lucide-react';
+import { Send, Search, MoreVertical, Phone, Video } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAuth } from '../hooks/useAuth';
+
+const API_URL = 'https://veyra-server.onrender.com/api';
 
 const ChatWindow = ({ activeChat, onBack }: { activeChat: any, onBack: () => void }) => {
-  const db = useDB();
+  const { currentUser } = useAuth();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
 
   useEffect(() => {
     const loadMessages = async () => {
-      if (!db || !activeChat) return;
-      const allMessages = await getItems(db, 'messages');
-      const chatMessages = allMessages.filter(m => m.conversationId === activeChat.id);
-      setMessages(chatMessages.sort((a, b) => a.timestamp - b.timestamp));
+      if (!activeChat) return;
+      try {
+        const res = await fetch(`${API_URL}/messages/${activeChat.id}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('veyra_token')}` }
+        });
+        const data = await res.json();
+        setMessages(data);
+      } catch (err) {
+        console.error(err);
+      }
     };
     loadMessages();
-  }, [db, activeChat]);
+  }, [activeChat]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !db || !activeChat) return;
+    if (!message.trim() || !currentUser) return;
 
-    const newMsg = {
-      id: `m${Date.now()}`,
-      conversationId: activeChat.id,
-      senderId: 'u1', // Mock current user
-      content: message,
-      timestamp: Date.now(),
-    };
-
-    await putItem(db, 'messages', newMsg);
-    setMessage('');
-    // In a real app, we'd trigger a re-fetch or update state
-    const all = await getItems(db, 'messages');
-    setMessages(all.filter(m => m.conversationId === activeChat.id).sort((a, b) => a.timestamp - b.timestamp));
+    try {
+      const res = await fetch(`${API_URL}/messages/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('veyra_token')}`
+        },
+        body: JSON.stringify({ conversationId: activeChat.id, content: message }),
+      });
+      if (!res.ok) throw new Error('Failed to send');
+      setMessage('');
+      const dataRes = await fetch(`${API_URL}/messages/${activeChat.id}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('veyra_token')}` }
+      });
+      setMessages(await dataRes.json());
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -49,7 +62,7 @@ const ChatWindow = ({ activeChat, onBack }: { activeChat: any, onBack: () => voi
           </div>
           <div>
             <h3 className="font-bold text-sm">{activeChat.name}</h3>
-            <span className="text-[10px] text-green-500 font-medium">Online (Local)</span>
+            <span className="text-[10px] text-green-500 font-medium">Online (Cloud)</span>
           </div>
         </div>
         <div className="flex items-center gap-3 text-veyra-textMuted">
@@ -66,10 +79,10 @@ const ChatWindow = ({ activeChat, onBack }: { activeChat: any, onBack: () => voi
           </div>
         ) : (
           messages.map(m => (
-            <div key={m.id} className={cn("flex flex-col max-w-[80%]", m.senderId === 'u1' ? "ml-auto items-end" : "mr-auto items-start")}>
+            <div key={m.id} className={cn("flex flex-col max-w-[80%]", m.senderId === currentUser?.id ? "ml-auto items-end" : "mr-auto items-start")}>
               <div className={cn(
                 "px-4 py-2 rounded-2xl text-sm",
-                m.senderId === 'u1' ? "bg-veyra-accentBlue text-white rounded-tr-none" : "glass-panel text-white rounded-tl-none"
+                m.senderId === currentUser?.id ? "bg-veyra-accentBlue text-white rounded-tr-none" : "glass-panel text-white rounded-tl-none"
               )}>
                 {m.content}
               </div>
@@ -99,10 +112,16 @@ const ChatWindow = ({ activeChat, onBack }: { activeChat: any, onBack: () => voi
 
 export const Messaging = () => {
   const [activeChat, setActiveChat] = useState<any>(null);
-  const demoChats = [
-    { id: 'c1', name: 'Sarah Sky', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
-    { id: 'c2', name: 'Mike Beats', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike' },
-  ];
+  const [chats, setChats] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/messages/conversations`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('veyra_token')}` }
+    })
+    .then(res => res.json())
+    .then(setChats)
+    .catch(console.error);
+  }, []);
 
   return (
     <div className="h-full flex overflow-hidden bg-veyra-black">
@@ -119,7 +138,7 @@ export const Messaging = () => {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {demoChats.map(chat => (
+          {chats.map(chat => (
             <div
               key={chat.id}
               onClick={() => setActiveChat(chat)}
@@ -134,9 +153,9 @@ export const Messaging = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline">
                   <span className="font-bold text-sm truncate">{chat.name}</span>
-                  <span className="text-[10px] text-veyra-textMuted">12:45 PM</span>
+                  <span className="text-[10px] text-veyra-textMuted">Recent</span>
                 </div>
-                <p className="text-xs text-veyra-textMuted truncate">Hey! How is Veyra going?</p>
+                <p className="text-xs text-veyra-textMuted truncate">{chat.lastMessage}</p>
               </div>
             </div>
           ))}
@@ -148,16 +167,14 @@ export const Messaging = () => {
           <ChatWindow activeChat={activeChat} onBack={() => setActiveChat(null)} />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-veyra-textMuted p-8 text-center">
-            <MessageSquare size={64} className="mb-4 opacity-20" />
+            <div className="mb-4 opacity-20">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </div>
             <h2 className="text-xl font-bold mb-2">Your Messages</h2>
-            <p className="text-sm max-w-xs">Select a conversation from the left to start chatting locally.</p>
+            <p className="text-sm max-w-xs">Select a conversation from the left to start chatting online.</p>
           </div>
         )}
       </div>
     </div>
   );
 };
-
-function MessageSquare({ size }: { size: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>;
-}

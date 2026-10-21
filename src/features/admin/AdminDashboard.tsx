@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDB, getItems } from '../hooks/useDB';
+import { useDB, getItems } from '../../hooks/useDB';
 import { Trash2, UserPlus, Activity, Database, ShieldAlert } from 'lucide-react';
 
 const StatCard = ({ label, value, icon: Icon }: { label: string, value: number, icon: any }) => (
